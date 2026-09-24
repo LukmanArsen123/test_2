@@ -6,12 +6,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Helpdesk.Api.Migrations
 {
-    /// <inheritdoc />
     [DbContext(typeof(Helpdesk.Api.Data.AppDbContext))]
     [Migration("20260921100000_InitialCreate")]
     public partial class InitialCreate : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -49,7 +47,6 @@ namespace Helpdesk.Api.Migrations
                 column: "Status");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(

@@ -1,0 +1,86 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Редактирование заявки' : 'Новая заявка' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="save()">
+  <mat-dialog-content class="form">
+    <mat-form-field appearance="outline">
+      <mat-label>Тема</mat-label>
+      <input matInput formControlName="title" maxlength="100" autocomplete="off" />
+      @if (form.controls.title.hasError('required')) {
+        <mat-error>Укажите тему заявки</mat-error>
+      } @else if (form.controls.title.hasError('minlength')) {
+        <mat-error>Минимум 3 символа</mat-error>
+      } @else if (form.controls.title.hasError('maxlength')) {
+        <mat-error>Максимум 100 символов</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Описание</mat-label>
+      <textarea matInput formControlName="description" rows="4" maxlength="2000"></textarea>
+      <mat-hint align="end">{{ form.controls.description.value.length }} / 2000</mat-hint>
+      @if (form.controls.description.hasError('maxlength')) {
+        <mat-error>Максимум 2000 символов</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Email заявителя</mat-label>
+      <input matInput type="email" formControlName="requesterEmail" autocomplete="off" />
+      @if (form.controls.requesterEmail.hasError('required')) {
+        <mat-error>Укажите email</mat-error>
+      } @else if (form.controls.requesterEmail.hasError('email')) {
+        <mat-error>Введите корректный email</mat-error>
+      } @else if (form.controls.requesterEmail.hasError('maxlength')) {
+        <mat-error>Максимум 254 символа</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Категория</mat-label>
+        <mat-select formControlName="category">
+          @for (c of categories; track c) {
+            <mat-option [value]="c">{{ categoryLabels[c] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Приоритет</mat-label>
+        <mat-select formControlName="priority">
+          @for (p of priorities; track p) {
+            <mat-option [value]="p">{{ priorityLabels[p] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (isEdit) {
+      <mat-form-field appearance="outline">
+        <mat-label>Статус</mat-label>
+        <mat-select formControlName="status">
+          @for (s of statuses; track s) {
+            <mat-option [value]="s">{{ statusLabels[s] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    @if (serverError(); as error) {
+      <div class="server-error" role="alert">{{ error }}</div>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" [mat-dialog-close]="false" [disabled]="saving()">
+      Отмена
+    </button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || saving()">
+      @if (saving()) {
+        <mat-spinner diameter="18" class="spinner" />
+      } @else {
+        Сохранить
+      }
+    </button>
+  </mat-dialog-actions>
+</form>

@@ -1,0 +1,30 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: min(520px, 80vw);
+  padding-top: 8px !important;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.server-error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #ffebee;
+  color: #b71c1c;
+  font-size: 14px;
+  white-space: pre-line;
+}
+
+.spinner {
+  display: inline-block;
+}

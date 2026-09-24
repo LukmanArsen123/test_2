@@ -5,8 +5,6 @@ namespace Helpdesk.Api.Dtos;
 
 public class CreateTicketDto
 {
-    [Required(ErrorMessage = "Title is required.")]
-    [StringLength(100, MinimumLength = 3, ErrorMessage = "Title must be between 3 and 100 characters.")]
     public string Title { get; set; } = string.Empty;
 
     [StringLength(2000, ErrorMessage = "Description must not exceed 2000 characters.")]
