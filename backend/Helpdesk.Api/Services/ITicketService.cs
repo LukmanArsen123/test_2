@@ -9,5 +9,6 @@ public interface ITicketService
     Task<TicketDto> GetByIdAsync(Guid id, CancellationToken ct);
     Task<TicketDto> CreateAsync(CreateTicketDto dto, CancellationToken ct);
     Task<TicketDto> UpdateAsync(Guid id, UpdateTicketDto dto, CancellationToken ct);
+    Task<TicketDto> ChangeStatusAsync(Guid id, TicketStatus status, CancellationToken ct);
     Task DeleteAsync(Guid id, CancellationToken ct);
 }

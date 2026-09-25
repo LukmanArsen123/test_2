@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, Inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,14 +10,11 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {
   CATEGORY_LABELS,
   PRIORITY_LABELS,
-  STATUS_LABELS,
   TICKET_CATEGORIES,
   TICKET_PRIORITIES,
-  TICKET_STATUSES,
   Ticket,
   TicketCategory,
   TicketPriority,
-  TicketStatus,
 } from '../../data-access/ticket.model';
 import { TicketStore } from '../../data-access/ticket.store';
 
@@ -37,42 +34,50 @@ import { TicketStore } from '../../data-access/ticket.store';
   styleUrl: './ticket-form.component.scss',
 })
 export class TicketFormComponent {
-  private readonly store = inject(TicketStore);
-  private readonly dialogRef = inject(MatDialogRef<TicketFormComponent, boolean>);
-  protected readonly ticket = inject<Ticket | null>(MAT_DIALOG_DATA);
-
-  protected readonly isEdit = !!this.ticket;
+  protected readonly ticket: Ticket | null;
+  protected readonly isEdit: boolean;
   protected readonly saving = signal(false);
   protected readonly serverError = signal<string | null>(null);
 
   protected readonly categories = TICKET_CATEGORIES;
   protected readonly priorities = TICKET_PRIORITIES;
-  protected readonly statuses = TICKET_STATUSES;
   protected readonly categoryLabels = CATEGORY_LABELS;
   protected readonly priorityLabels = PRIORITY_LABELS;
-  protected readonly statusLabels = STATUS_LABELS;
 
-  protected readonly form = new FormGroup({
-    title: new FormControl(this.ticket?.title ?? '', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.minLength(3), Validators.maxLength(100)],
-    }),
-    description: new FormControl(this.ticket?.description ?? '', {
-      nonNullable: true,
-      validators: [Validators.maxLength(2000)],
-    }),
-    requesterEmail: new FormControl(this.ticket?.requesterEmail ?? '', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.email, Validators.maxLength(254)],
-    }),
-    category: new FormControl<TicketCategory>(this.ticket?.category ?? 'Other', {
-      nonNullable: true,
-    }),
-    priority: new FormControl<TicketPriority>(this.ticket?.priority ?? 'Medium', {
-      nonNullable: true,
-    }),
-    status: new FormControl<TicketStatus>(this.ticket?.status ?? 'New', { nonNullable: true }),
-  });
+  protected readonly form: FormGroup<{
+    title: FormControl<string>;
+    description: FormControl<string>;
+    userEmail: FormControl<string>;
+    category: FormControl<TicketCategory>;
+    priority: FormControl<TicketPriority>;
+  }>;
+
+  constructor(
+    private readonly store: TicketStore,
+    private readonly dialogRef: MatDialogRef<TicketFormComponent, boolean>,
+    @Inject(MAT_DIALOG_DATA) ticket: Ticket | null,
+  ) {
+    this.ticket = ticket;
+    this.isEdit = !!ticket;
+
+    this.form = new FormGroup({
+      title: new FormControl(ticket?.title ?? '', {
+        nonNullable: true,
+        validators: Validators.required,
+      }),
+      description: new FormControl(ticket?.description ?? '', { nonNullable: true }),
+      userEmail: new FormControl(ticket?.userEmail ?? '', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.email],
+      }),
+      category: new FormControl<TicketCategory>(ticket?.category ?? 'Other', {
+        nonNullable: true,
+      }),
+      priority: new FormControl<TicketPriority>(ticket?.priority ?? 'Medium', {
+        nonNullable: true,
+      }),
+    });
+  }
 
   protected save(): void {
     if (this.form.invalid || this.saving()) {
@@ -81,10 +86,10 @@ export class TicketFormComponent {
     }
 
     const value = this.form.getRawValue();
-    const base = {
+    const dto = {
       title: value.title.trim(),
       description: value.description.trim() || null,
-      requesterEmail: value.requesterEmail.trim(),
+      userEmail: value.userEmail.trim(),
       category: value.category,
       priority: value.priority,
     };
@@ -92,9 +97,7 @@ export class TicketFormComponent {
     this.saving.set(true);
     this.serverError.set(null);
 
-    const request$ = this.ticket
-      ? this.store.update(this.ticket.id, { ...base, status: value.status })
-      : this.store.create(base);
+    const request$ = this.ticket ? this.store.update(this.ticket.id, dto) : this.store.create(dto);
 
     request$.subscribe({
       next: () => this.dialogRef.close(true),

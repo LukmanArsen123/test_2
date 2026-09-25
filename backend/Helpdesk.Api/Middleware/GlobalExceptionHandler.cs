@@ -12,6 +12,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         var (status, title, detail) = exception switch
         {
             NotFoundException => (StatusCodes.Status404NotFound, "Not Found", exception.Message),
+            InvalidStatusTransitionException => (StatusCodes.Status400BadRequest, "Invalid Status Transition", exception.Message),
             BadHttpRequestException => (StatusCodes.Status400BadRequest, "Bad Request", exception.Message),
             _ => (StatusCodes.Status500InternalServerError, "Internal Server Error",
                   "An unexpected error occurred. Please try again later.")

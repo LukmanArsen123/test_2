@@ -17,7 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(t => t.Title).IsRequired().HasMaxLength(100);
             entity.Property(t => t.Description).HasMaxLength(2000);
-            entity.Property(t => t.RequesterEmail).IsRequired().HasMaxLength(254);
+            entity.Property(t => t.UserEmail).IsRequired().HasMaxLength(254);
 
             entity.Property(t => t.Category).HasConversion<string>().HasMaxLength(20);
             entity.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);

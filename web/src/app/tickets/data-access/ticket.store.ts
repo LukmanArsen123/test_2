@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
 
-import { CreateTicket, Ticket, TicketFilters, UpdateTicket } from './ticket.model';
+import { CreateTicket, Ticket, TicketFilters, TicketStatus, UpdateTicket } from './ticket.model';
 import { TicketService } from './ticket.service';
 
 @Injectable({ providedIn: 'root' })
@@ -36,6 +36,10 @@ export class TicketStore {
 
   update(id: string, dto: UpdateTicket): Observable<Ticket> {
     return this.api.update(id, dto);
+  }
+
+  changeStatus(id: string, status: TicketStatus): Observable<Ticket> {
+    return this.api.changeStatus(id, status);
   }
 
   delete(id: string): Observable<void> {

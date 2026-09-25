@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { CreateTicket, Ticket, TicketFilters, UpdateTicket } from './ticket.model';
+import { CreateTicket, Ticket, TicketFilters, TicketStatus, UpdateTicket } from './ticket.model';
 
 @Injectable({ providedIn: 'root' })
 export class TicketService {
@@ -28,6 +28,10 @@ export class TicketService {
 
   update(id: string, dto: UpdateTicket): Observable<Ticket> {
     return this.http.put<Ticket>(`${this.baseUrl}/${id}`, dto);
+  }
+
+  changeStatus(id: string, status: TicketStatus): Observable<Ticket> {
+    return this.http.patch<Ticket>(`${this.baseUrl}/${id}/status`, { status });
   }
 
   delete(id: string): Observable<void> {

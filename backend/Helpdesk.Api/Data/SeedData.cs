@@ -17,7 +17,7 @@ public static class SeedData
             Id = Guid.NewGuid(),
             Title = title,
             Description = description,
-            RequesterEmail = email,
+            UserEmail = email,
             Category = category,
             Status = status,
             Priority = priority,

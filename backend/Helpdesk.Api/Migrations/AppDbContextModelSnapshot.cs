@@ -42,7 +42,7 @@ namespace Helpdesk.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.Property<string>("RequesterEmail")
+                    b.Property<string>("UserEmail")
                         .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)");

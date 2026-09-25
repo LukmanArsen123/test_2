@@ -19,7 +19,7 @@ namespace Helpdesk.Api.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Title = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
-                    RequesterEmail = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
+                    UserEmail = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
                     Category = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Priority = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),

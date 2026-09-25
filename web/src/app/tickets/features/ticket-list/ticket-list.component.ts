@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +17,7 @@ import {
   CATEGORY_LABELS,
   PRIORITY_LABELS,
   STATUS_LABELS,
+  STATUS_TRANSITIONS,
   TICKET_PRIORITIES,
   TICKET_STATUSES,
   Ticket,
@@ -45,11 +46,6 @@ import { TicketFormComponent } from '../ticket-form/ticket-form.component';
   styleUrl: './ticket-list.component.scss',
 })
 export class TicketListComponent implements OnInit {
-  protected readonly store = inject(TicketStore);
-  private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
-  private readonly destroyRef = inject(DestroyRef);
-
   protected readonly hasFilters = signal(false);
 
   protected readonly searchControl = new FormControl('', { nonNullable: true });
@@ -63,6 +59,13 @@ export class TicketListComponent implements OnInit {
   protected readonly categoryLabels = CATEGORY_LABELS;
 
   private readonly reload$ = new Subject<void>();
+
+  constructor(
+    protected readonly store: TicketStore,
+    private readonly dialog: MatDialog,
+    private readonly snackBar: MatSnackBar,
+    private readonly destroyRef: DestroyRef,
+  ) {}
 
   ngOnInit(): void {
     const search$ = this.searchControl.valueChanges.pipe(
@@ -134,5 +137,24 @@ export class TicketListComponent implements OnInit {
             this.snackBar.open('Не удалось удалить заявку', 'Закрыть', { duration: 5000 }),
         });
       });
+  }
+
+  protected nextStatuses(ticket: Ticket): TicketStatus[] {
+    return STATUS_TRANSITIONS[ticket.status];
+  }
+
+  protected changeStatus(ticket: Ticket, status: TicketStatus): void {
+    if (status === ticket.status) return;
+
+    this.store.changeStatus(ticket.id, status).subscribe({
+      next: () => {
+        this.snackBar.open('Статус обновлён', 'OK', { duration: 3000 });
+        this.reload();
+      },
+      error: (err) =>
+        this.snackBar.open(err.error?.detail ?? 'Не удалось сменить статус', 'Закрыть', {
+          duration: 5000,
+        }),
+    });
   }
 }

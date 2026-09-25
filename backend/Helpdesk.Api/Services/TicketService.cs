@@ -24,15 +24,19 @@ public class TicketService(AppDbContext db) : ITicketService
         if (status.HasValue) query = query.Where(t => t.Status == status.Value);
         if (priority.HasValue) query = query.Where(t => t.Priority == priority.Value);
 
-        var tickets = await query.OrderByDescending(t => t.CreatedAt).ToListAsync(ct);
-        return tickets.Select(ToDto).ToList();
+        var tickets = await query
+            .OrderByDescending(t => t.CreatedAt)
+            .ThenBy(t => t.Id)
+            .ToListAsync(ct);
+
+        return tickets.Select(t => t.ToDto()).ToList();
     }
 
     public async Task<TicketDto> GetByIdAsync(Guid id, CancellationToken ct)
     {
         var ticket = await db.Tickets.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, ct)
                      ?? throw NotFound(id);
-        return ToDto(ticket);
+        return ticket.ToDto();
     }
 
     public async Task<TicketDto> CreateAsync(CreateTicketDto dto, CancellationToken ct)
@@ -43,7 +47,7 @@ public class TicketService(AppDbContext db) : ITicketService
             Id = Guid.NewGuid(),
             Title = dto.Title.Trim(),
             Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
-            RequesterEmail = dto.RequesterEmail.Trim(),
+            UserEmail = dto.UserEmail.Trim(),
             Category = dto.Category,
             Priority = dto.Priority,
             Status = TicketStatus.New,
@@ -53,7 +57,7 @@ public class TicketService(AppDbContext db) : ITicketService
 
         db.Tickets.Add(ticket);
         await db.SaveChangesAsync(ct);
-        return ToDto(ticket);
+        return ticket.ToDto();
     }
 
     public async Task<TicketDto> UpdateAsync(Guid id, UpdateTicketDto dto, CancellationToken ct)
@@ -63,14 +67,31 @@ public class TicketService(AppDbContext db) : ITicketService
 
         ticket.Title = dto.Title.Trim();
         ticket.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
-        ticket.RequesterEmail = dto.RequesterEmail.Trim();
+        ticket.UserEmail = dto.UserEmail.Trim();
         ticket.Category = dto.Category;
         ticket.Priority = dto.Priority;
-        ticket.Status = dto.Status;
         ticket.UpdatedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync(ct);
-        return ToDto(ticket);
+        return ticket.ToDto();
+    }
+
+    public async Task<TicketDto> ChangeStatusAsync(Guid id, TicketStatus status, CancellationToken ct)
+    {
+        var ticket = await db.Tickets.FirstOrDefaultAsync(t => t.Id == id, ct)
+                     ?? throw NotFound(id);
+
+        if (!TicketStatusRules.CanTransition(ticket.Status, status))
+        {
+            throw new InvalidStatusTransitionException(
+                $"Переход из статуса '{ticket.Status}' в '{status}' недопустим.");
+        }
+
+        ticket.Status = status;
+        ticket.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync(ct);
+        return ticket.ToDto();
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct)
@@ -86,17 +107,4 @@ public class TicketService(AppDbContext db) : ITicketService
 
     private static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
-
-    private static TicketDto ToDto(Ticket t) => new()
-    {
-        Id = t.Id,
-        Title = t.Title,
-        Description = t.Description,
-        RequesterEmail = t.RequesterEmail,
-        Category = t.Category,
-        Status = t.Status,
-        Priority = t.Priority,
-        CreatedAt = t.CreatedAt,
-        UpdatedAt = t.UpdatedAt
-    };
 }

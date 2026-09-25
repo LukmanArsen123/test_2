@@ -78,11 +78,20 @@
         }
 
         <div class="meta">
-          <span>{{ t.requesterEmail }}</span>
+          <span>{{ t.userEmail }}</span>
           <span>Создана {{ t.createdAt | date: 'dd.MM.yyyy HH:mm' }}</span>
         </div>
 
         <div class="actions">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="status-select">
+            <mat-label>Статус</mat-label>
+            <mat-select [value]="t.status" (selectionChange)="changeStatus(t, $event.value)">
+              <mat-option [value]="t.status">{{ statusLabels[t.status] }}</mat-option>
+              @for (s of nextStatuses(t); track s) {
+                <mat-option [value]="s">{{ statusLabels[s] }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
           <button mat-button (click)="openForm(t)">
             <mat-icon>edit</mat-icon>
             Изменить

@@ -34,29 +34,31 @@ export const CATEGORY_LABELS: Record<TicketCategory, string> = {
   Other: 'Другое',
 };
 
-export interface Ticket {
-  id: string;
+export interface TicketBase {
   title: string;
   description: string | null;
-  requesterEmail: string;
+  userEmail: string;
   category: TicketCategory;
-  status: TicketStatus;
   priority: TicketPriority;
+}
+
+export interface Ticket extends TicketBase {
+  id: string;
+  status: TicketStatus;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface CreateTicket {
-  title: string;
-  description: string | null;
-  requesterEmail: string;
-  category: TicketCategory;
-  priority: TicketPriority;
-}
+export type CreateTicket = TicketBase;
 
-export interface UpdateTicket extends CreateTicket {
-  status: TicketStatus;
-}
+export type UpdateTicket = TicketBase;
+
+export const STATUS_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
+  New: ['InProgress', 'Closed'],
+  InProgress: ['Resolved', 'Closed', 'New'],
+  Resolved: ['Closed', 'InProgress'],
+  Closed: ['InProgress'],
+};
 
 export interface TicketFilters {
   search?: string;

@@ -41,6 +41,13 @@ public class TicketsController(ITicketService service) : ControllerBase
     public async Task<ActionResult<TicketDto>> Update(Guid id, UpdateTicketDto dto, CancellationToken ct)
         => Ok(await service.UpdateAsync(id, dto, ct));
 
+    [HttpPatch("{id}/status")]
+    [ProducesResponseType(typeof(TicketDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TicketDto>> ChangeStatus(Guid id, ChangeTicketStatusDto dto, CancellationToken ct)
+        => Ok(await service.ChangeStatusAsync(id, dto.Status, ct));
+
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

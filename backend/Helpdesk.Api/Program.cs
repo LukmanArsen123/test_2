@@ -46,7 +46,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
-    await SeedData.InitializeAsync(db);
+
+    if (builder.Configuration.GetValue("Seed:Enabled", true))
+        await SeedData.InitializeAsync(db);
 }
 
 app.UseExceptionHandler();
