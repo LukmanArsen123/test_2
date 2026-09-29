@@ -30,8 +30,8 @@
       <mat-form-field appearance="outline">
         <mat-label>Категория</mat-label>
         <mat-select formControlName="category">
-          @for (c of categories; track c) {
-            <mat-option [value]="c">{{ categoryLabels[c] }}</mat-option>
+          @for (c of meta.categories; track c) {
+            <mat-option [value]="c">{{ meta.categoryLabel(c) }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
@@ -39,16 +39,12 @@
       <mat-form-field appearance="outline">
         <mat-label>Приоритет</mat-label>
         <mat-select formControlName="priority">
-          @for (p of priorities; track p) {
-            <mat-option [value]="p">{{ priorityLabels[p] }}</mat-option>
+          @for (p of meta.priorities; track p) {
+            <mat-option [value]="p">{{ meta.priorityLabel(p) }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
     </div>
-
-    @if (serverError(); as error) {
-      <div class="server-error" role="alert">{{ error }}</div>
-    }
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">

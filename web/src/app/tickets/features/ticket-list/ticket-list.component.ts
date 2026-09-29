@@ -10,20 +10,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Subject, combineLatest, debounceTime, distinctUntilChanged, map, startWith } from 'rxjs';
+import { Observable, Subject, combineLatest, debounceTime, distinctUntilChanged, map, startWith } from 'rxjs';
 
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
-import {
-  CATEGORY_LABELS,
-  PRIORITY_LABELS,
-  STATUS_LABELS,
-  STATUS_TRANSITIONS,
-  TICKET_PRIORITIES,
-  TICKET_STATUSES,
-  Ticket,
-  TicketPriority,
-  TicketStatus,
-} from '../../data-access/ticket.model';
+import { TicketMetaService } from '../../data-access/ticket-meta.service';
+import { Ticket, TicketPriority, TicketStatus } from '../../data-access/ticket.model';
 import { TicketStore } from '../../data-access/ticket.store';
 import { TicketFormComponent } from '../ticket-form/ticket-form.component';
 
@@ -52,16 +43,11 @@ export class TicketListComponent implements OnInit {
   protected readonly statusControl = new FormControl<TicketStatus | null>(null);
   protected readonly priorityControl = new FormControl<TicketPriority | null>(null);
 
-  protected readonly statuses = TICKET_STATUSES;
-  protected readonly priorities = TICKET_PRIORITIES;
-  protected readonly statusLabels = STATUS_LABELS;
-  protected readonly priorityLabels = PRIORITY_LABELS;
-  protected readonly categoryLabels = CATEGORY_LABELS;
-
   private readonly reload$ = new Subject<void>();
 
   constructor(
     protected readonly store: TicketStore,
+    protected readonly meta: TicketMetaService,
     private readonly dialog: MatDialog,
     private readonly snackBar: MatSnackBar,
     private readonly destroyRef: DestroyRef,
@@ -128,33 +114,21 @@ export class TicketListComponent implements OnInit {
       .afterClosed()
       .subscribe((confirmed) => {
         if (!confirmed) return;
-        this.store.delete(ticket.id).subscribe({
-          next: () => {
-            this.snackBar.open('Заявка удалена', 'OK', { duration: 3000 });
-            this.reload();
-          },
-          error: () =>
-            this.snackBar.open('Не удалось удалить заявку', 'Закрыть', { duration: 5000 }),
-        });
+        this.runMutation(this.store.delete(ticket.id), 'Заявка удалена');
       });
-  }
-
-  protected nextStatuses(ticket: Ticket): TicketStatus[] {
-    return STATUS_TRANSITIONS[ticket.status];
   }
 
   protected changeStatus(ticket: Ticket, status: TicketStatus): void {
     if (status === ticket.status) return;
 
-    this.store.changeStatus(ticket.id, status).subscribe({
-      next: () => {
-        this.snackBar.open('Статус обновлён', 'OK', { duration: 3000 });
-        this.reload();
-      },
-      error: (err) =>
-        this.snackBar.open(err.error?.detail ?? 'Не удалось сменить статус', 'Закрыть', {
-          duration: 5000,
-        }),
+    this.runMutation(this.store.changeStatus(ticket.id, status), 'Статус обновлён');
+  }
+
+  /** Выполняет изменяющий запрос; при успехе — тост и перезагрузка списка. Ошибки показывает httpErrorInterceptor. */
+  private runMutation(request$: Observable<unknown>, successText: string): void {
+    request$.subscribe(() => {
+      this.snackBar.open(successText, 'OK', { duration: 3000 });
+      this.reload();
     });
   }
 }

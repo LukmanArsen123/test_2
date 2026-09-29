@@ -6,16 +6,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs';
 
-import {
-  CATEGORY_LABELS,
-  PRIORITY_LABELS,
-  TICKET_CATEGORIES,
-  TICKET_PRIORITIES,
-  Ticket,
-  TicketCategory,
-  TicketPriority,
-} from '../../data-access/ticket.model';
+import { TicketMetaService } from '../../data-access/ticket-meta.service';
+import { Ticket, TicketCategory, TicketPriority } from '../../data-access/ticket.model';
 import { TicketStore } from '../../data-access/ticket.store';
 
 @Component({
@@ -37,12 +31,6 @@ export class TicketFormComponent {
   protected readonly ticket: Ticket | null;
   protected readonly isEdit: boolean;
   protected readonly saving = signal(false);
-  protected readonly serverError = signal<string | null>(null);
-
-  protected readonly categories = TICKET_CATEGORIES;
-  protected readonly priorities = TICKET_PRIORITIES;
-  protected readonly categoryLabels = CATEGORY_LABELS;
-  protected readonly priorityLabels = PRIORITY_LABELS;
 
   protected readonly form: FormGroup<{
     title: FormControl<string>;
@@ -54,6 +42,7 @@ export class TicketFormComponent {
 
   constructor(
     private readonly store: TicketStore,
+    protected readonly meta: TicketMetaService,
     private readonly dialogRef: MatDialogRef<TicketFormComponent, boolean>,
     @Inject(MAT_DIALOG_DATA) ticket: Ticket | null,
   ) {
@@ -95,16 +84,11 @@ export class TicketFormComponent {
     };
 
     this.saving.set(true);
-    this.serverError.set(null);
 
     const request$ = this.ticket ? this.store.update(this.ticket.id, dto) : this.store.create(dto);
 
-    request$.subscribe({
-      next: () => this.dialogRef.close(true),
-      error: (err) => {
-        this.saving.set(false);
-        this.serverError.set(err.error?.detail ?? 'Не удалось сохранить заявку');
-      },
-    });
+    request$
+      .pipe(finalize(() => this.saving.set(false)))
+      .subscribe(() => this.dialogRef.close(true));
   }
 }

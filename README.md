@@ -70,7 +70,7 @@ npm start
 | PATCH | `/api/tickets/{id}/status` | смена статуса, с проверкой допустимости перехода |
 | DELETE | `/api/tickets/{id}` | удаление (204) |
 
-Правила переходов статуса (`Domain/TicketStatusRules.cs`, продублированы на фронте в `STATUS_TRANSITIONS`):
+Правила переходов статуса (`Domain/TicketStatusRules.cs`, продублированы на фронте в `TicketMetaService`):
 
 ```
 New        → InProgress, Closed
@@ -118,7 +118,7 @@ curl -X PATCH http://localhost:5000/api/tickets/{id}/status \
     ├── Dockerfile, nginx.conf   # nginx также проксирует /api/ на контейнер api (см. ниже)
     └── src/app/
         ├── tickets/
-        │   ├── data-access/          # ticket.model.ts (типы + shared-интерфейс TicketBase), ticket.service.ts (HTTP), ticket.store.ts (state)
+        │   ├── data-access/          # ticket.model.ts (только типы), ticket-meta.service.ts (справочники статусов/приоритетов/категорий + подписи + переходы), ticket.service.ts (HTTP), ticket.store.ts (state)
         │   ├── features/
         │   │   ├── ticket-list/      # список, поиск, фильтры, смена статуса на карточке
         │   │   └── ticket-form/      # форма создания/редактирования (модальное окно)
@@ -133,11 +133,14 @@ curl -X PATCH http://localhost:5000/api/tickets/{id}/status \
   проекты Domain/Application/Infrastructure были бы избыточны.
 - **Поиск и фильтры на сервере**: `ILIKE` в PostgreSQL, спецсимволы `%` и `_` экранируются.
   Индексы на `Status`, `Priority`, `CreatedAt`. Сортировка стабильна (`CreatedAt DESC, Id`).
+- **Ошибки HTTP обрабатываются глобально** в `core/http-error.interceptor.ts`: он показывает тост с текстом
+  из `ProblemDetails` (или сообщения валидации). В компонентах и сервисах нет `catchError` и `error`-колбэков —
+  флаги загрузки сбрасываются через `finalize`, в `subscribe()` передаётся только функция успеха.
 - **Debounce 300 мс только на поиске**, фильтры срабатывают сразу; предыдущий запрос отменяется вручную
   через сохранённую `Subscription` при каждом новом.
 - **Статус при создании не передаётся**, всегда `New`. `PUT` меняет только бизнес-поля заявки и не трогает
   статус — для этого отдельный `PATCH /api/tickets/{id}/status` с проверкой допустимого перехода
-  (`TicketStatusRules`). Правила переходов продублированы на фронте (`STATUS_TRANSITIONS`) только для UX
+  (`TicketStatusRules`). Правила переходов продублированы на фронте (`TicketMetaService.nextStatuses()`) только для UX
   (чтобы не предлагать недопустимые пункты в селекте) — источник истины всегда бэкенд.
 - **Валидация полей дублируется** на клиенте (только `required`/`email`, для удобства) и на сервере
   (DataAnnotations в DTO — источник истины). Ограничения длины (`maxLength`) не дублируются валидаторами
@@ -163,7 +166,7 @@ curl -X PATCH http://localhost:5000/api/tickets/{id}/status \
 - Unit- и integration-тесты: xUnit для `TicketService` и `TicketStatusRules` (InMemory/Testcontainers),
   Jest для компонентов.
 - Единый API-контракт: enum'ы (`TicketStatus`, `TicketPriority`, `TicketCategory`) сейчас продублированы
-  вручную на фронте и бэке (в том числе таблица переходов статусов). Правильное решение — генерировать
+  вручную на фронте (`TicketMetaService` — единственное место на клиенте) и бэке (в том числе таблица переходов статусов). Правильное решение — генерировать
   TypeScript-модели из Swagger/OpenAPI (например, NSwag) вместо ручной синхронизации.
 - Serilog и структурные логи, GitHub Actions (сборка + тесты).
 - Optimistic concurrency (Postgres `xmin` как concurrency token) для защиты от перезаписи при
