@@ -3,12 +3,13 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { CreateTicket, Ticket, TicketFilters, TicketStatus, UpdateTicket } from './ticket.model';
+import { SaveTicket, Ticket, TicketFilters, TicketMeta, TicketStatus } from './ticket.model';
 
 @Injectable({ providedIn: 'root' })
 export class TicketService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/tickets`;
+  private readonly metaUrl = `${environment.apiUrl}/ticket-meta`;
 
   getAll(filters: TicketFilters = {}): Observable<Ticket[]> {
     let params = new HttpParams();
@@ -18,15 +19,19 @@ export class TicketService {
     return this.http.get<Ticket[]>(this.baseUrl, { params });
   }
 
+  getMeta(): Observable<TicketMeta> {
+    return this.http.get<TicketMeta>(this.metaUrl);
+  }
+
   getById(id: string): Observable<Ticket> {
     return this.http.get<Ticket>(`${this.baseUrl}/${id}`);
   }
 
-  create(dto: CreateTicket): Observable<Ticket> {
+  create(dto: SaveTicket): Observable<Ticket> {
     return this.http.post<Ticket>(this.baseUrl, dto);
   }
 
-  update(id: string, dto: UpdateTicket): Observable<Ticket> {
+  update(id: string, dto: SaveTicket): Observable<Ticket> {
     return this.http.put<Ticket>(`${this.baseUrl}/${id}`, dto);
   }
 

@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json.Serialization;
 using Helpdesk.Api.Data;
 using Helpdesk.Api.Middleware;
@@ -11,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
+builder.Services.AddScoped(typeof(BaseService<>));
 builder.Services.AddScoped<ITicketService, TicketService>();
 
 builder.Services.AddControllers()
@@ -27,16 +27,12 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
-{
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Helpdesk API",
         Version = "v1",
         Description = "API для учёта заявок в IT-поддержку"
-    });
-    var xmlFile = Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetExecutingAssembly().GetName().Name}.xml");
-    if (File.Exists(xmlFile)) c.IncludeXmlComments(xmlFile);
-});
+    }));
 
 builder.Services.AddHealthChecks();
 
@@ -47,8 +43,10 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 
+    await SeedData.SeedLabelsAsync(db);
+
     if (builder.Configuration.GetValue("Seed:Enabled", true))
-        await SeedData.InitializeAsync(db);
+        await SeedData.SeedTicketsAsync(db);
 }
 
 app.UseExceptionHandler();

@@ -1,17 +1,23 @@
 using Helpdesk.Api.Data;
 using Helpdesk.Api.Domain;
-using Helpdesk.Api.Dtos;
-using Helpdesk.Api.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Helpdesk.Api.Services;
 
-public class TicketService(AppDbContext db) : ITicketService
+public interface ITicketService
 {
-    public async Task<IReadOnlyList<TicketDto>> GetAllAsync(
-        string? search, TicketStatus? status, TicketPriority? priority, CancellationToken ct)
+    Task<IReadOnlyList<Ticket>> GetAllAsync(string? search, TicketStatus? status, TicketPriority? priority);
+    Task<Ticket> GetByIdAsync(Guid id);
+    Task<Ticket> AddAsync(Ticket ticket);
+    Task<Ticket> UpdateAsync(Ticket ticket);
+    Task DeleteAsync(Guid id);
+}
+
+public class TicketService(AppDbContext db) : BaseService<Ticket>(db), ITicketService
+{
+    public async Task<IReadOnlyList<Ticket>> GetAllAsync(string? search, TicketStatus? status, TicketPriority? priority)
     {
-        IQueryable<Ticket> query = db.Tickets.AsNoTracking();
+        IQueryable<Ticket> query = Set.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -24,86 +30,25 @@ public class TicketService(AppDbContext db) : ITicketService
         if (status.HasValue) query = query.Where(t => t.Status == status.Value);
         if (priority.HasValue) query = query.Where(t => t.Priority == priority.Value);
 
-        var tickets = await query
+        return await query
             .OrderByDescending(t => t.CreatedAt)
             .ThenBy(t => t.Id)
-            .ToListAsync(ct);
-
-        return tickets.Select(t => t.ToDto()).ToList();
+            .ToListAsync();
     }
 
-    public async Task<TicketDto> GetByIdAsync(Guid id, CancellationToken ct)
+    public override Task<Ticket> AddAsync(Ticket ticket)
     {
-        var ticket = await db.Tickets.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, ct)
-                     ?? throw NotFound(id);
-        return ticket.ToDto();
+        ticket.Id = Guid.NewGuid();
+        ticket.Status = TicketStatus.New;
+        ticket.CreatedAt = ticket.UpdatedAt = DateTime.UtcNow;
+        return base.AddAsync(ticket);
     }
 
-    public async Task<TicketDto> CreateAsync(CreateTicketDto dto, CancellationToken ct)
+    public override Task<Ticket> UpdateAsync(Ticket ticket)
     {
-        var now = DateTime.UtcNow;
-        var ticket = new Ticket
-        {
-            Id = Guid.NewGuid(),
-            Title = dto.Title.Trim(),
-            Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
-            UserEmail = dto.UserEmail.Trim(),
-            Category = dto.Category,
-            Priority = dto.Priority,
-            Status = TicketStatus.New,
-            CreatedAt = now,
-            UpdatedAt = now
-        };
-
-        db.Tickets.Add(ticket);
-        await db.SaveChangesAsync(ct);
-        return ticket.ToDto();
-    }
-
-    public async Task<TicketDto> UpdateAsync(Guid id, UpdateTicketDto dto, CancellationToken ct)
-    {
-        var ticket = await db.Tickets.FirstOrDefaultAsync(t => t.Id == id, ct)
-                     ?? throw NotFound(id);
-
-        ticket.Title = dto.Title.Trim();
-        ticket.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
-        ticket.UserEmail = dto.UserEmail.Trim();
-        ticket.Category = dto.Category;
-        ticket.Priority = dto.Priority;
         ticket.UpdatedAt = DateTime.UtcNow;
-
-        await db.SaveChangesAsync(ct);
-        return ticket.ToDto();
+        return base.UpdateAsync(ticket);
     }
-
-    public async Task<TicketDto> ChangeStatusAsync(Guid id, TicketStatus status, CancellationToken ct)
-    {
-        var ticket = await db.Tickets.FirstOrDefaultAsync(t => t.Id == id, ct)
-                     ?? throw NotFound(id);
-
-        if (!TicketStatusRules.CanTransition(ticket.Status, status))
-        {
-            throw new InvalidStatusTransitionException(
-                $"Переход из статуса '{ticket.Status}' в '{status}' недопустим.");
-        }
-
-        ticket.Status = status;
-        ticket.UpdatedAt = DateTime.UtcNow;
-
-        await db.SaveChangesAsync(ct);
-        return ticket.ToDto();
-    }
-
-    public async Task DeleteAsync(Guid id, CancellationToken ct)
-    {
-        var ticket = await db.Tickets.FirstOrDefaultAsync(t => t.Id == id, ct)
-                     ?? throw NotFound(id);
-
-        db.Tickets.Remove(ticket);
-        await db.SaveChangesAsync(ct);
-    }
-
-    private static NotFoundException NotFound(Guid id) => new($"Ticket with id '{id}' was not found.");
 
     private static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");

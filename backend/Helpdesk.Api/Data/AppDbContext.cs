@@ -6,6 +6,7 @@ namespace Helpdesk.Api.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<Ticket> Tickets => Set<Ticket>();
+    public DbSet<TicketLabel> TicketLabels => Set<TicketLabel>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +27,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(t => t.Status);
             entity.HasIndex(t => t.Priority);
             entity.HasIndex(t => t.CreatedAt);
+        });
+
+        modelBuilder.Entity<TicketLabel>(entity =>
+        {
+            entity.ToTable("TicketLabels");
+            entity.HasKey(l => new { l.Group, l.Value });
+
+            entity.Property(l => l.Group).HasConversion<string>().HasMaxLength(20);
+            entity.Property(l => l.Value).HasMaxLength(20);
+            entity.Property(l => l.Label).IsRequired().HasMaxLength(100);
         });
     }
 }

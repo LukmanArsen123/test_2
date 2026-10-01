@@ -10,10 +10,10 @@
   <mat-form-field appearance="outline" class="search" subscriptSizing="dynamic">
     <mat-label>Поиск по теме и описанию</mat-label>
     <mat-icon matPrefix>search</mat-icon>
-    <input matInput [formControl]="searchControl" autocomplete="off" />
-    @if (searchControl.value) {
+    <input matInput [formControl]="filters.controls.search" autocomplete="off" />
+    @if (filters.controls.search.value) {
       <button matSuffix mat-icon-button type="button" aria-label="Очистить поиск"
-              (click)="searchControl.setValue('')">
+              (click)="filters.controls.search.setValue('')">
         <mat-icon>close</mat-icon>
       </button>
     }
@@ -21,20 +21,20 @@
 
   <mat-form-field appearance="outline" subscriptSizing="dynamic">
     <mat-label>Статус</mat-label>
-    <mat-select [formControl]="statusControl">
+    <mat-select [formControl]="filters.controls.status">
       <mat-option [value]="null">Все</mat-option>
-      @for (s of meta.statuses; track s) {
-        <mat-option [value]="s">{{ meta.statusLabel(s) }}</mat-option>
+      @for (s of meta.statuses(); track s.value) {
+        <mat-option [value]="s.value">{{ s.label }}</mat-option>
       }
     </mat-select>
   </mat-form-field>
 
   <mat-form-field appearance="outline" subscriptSizing="dynamic">
     <mat-label>Приоритет</mat-label>
-    <mat-select [formControl]="priorityControl">
+    <mat-select [formControl]="filters.controls.priority">
       <mat-option [value]="null">Все</mat-option>
-      @for (p of meta.priorities; track p) {
-        <mat-option [value]="p">{{ meta.priorityLabel(p) }}</mat-option>
+      @for (p of meta.priorities(); track p.value) {
+        <mat-option [value]="p.value">{{ p.label }}</mat-option>
       }
     </mat-select>
   </mat-form-field>
@@ -80,9 +80,8 @@
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="status-select">
             <mat-label>Статус</mat-label>
             <mat-select [value]="t.status" (selectionChange)="changeStatus(t, $event.value)">
-              <mat-option [value]="t.status">{{ meta.statusLabel(t.status) }}</mat-option>
-              @for (s of meta.nextStatuses(t.status); track s) {
-                <mat-option [value]="s">{{ meta.statusLabel(s) }}</mat-option>
+              @for (s of meta.statuses(); track s.value) {
+                <mat-option [value]="s.value">{{ s.label }}</mat-option>
               }
             </mat-select>
           </mat-form-field>

@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, Subscription, finalize } from 'rxjs';
 
-import { CreateTicket, Ticket, TicketFilters, TicketStatus, UpdateTicket } from './ticket.model';
+import { SaveTicket, Ticket, TicketFilters, TicketStatus } from './ticket.model';
 import { TicketService } from './ticket.service';
 
 @Injectable({ providedIn: 'root' })
@@ -22,11 +22,11 @@ export class TicketStore {
       .subscribe((result) => this.tickets.set(result));
   }
 
-  create(dto: CreateTicket): Observable<Ticket> {
+  create(dto: SaveTicket): Observable<Ticket> {
     return this.api.create(dto);
   }
 
-  update(id: string, dto: UpdateTicket): Observable<Ticket> {
+  update(id: string, dto: SaveTicket): Observable<Ticket> {
     return this.api.update(id, dto);
   }
 

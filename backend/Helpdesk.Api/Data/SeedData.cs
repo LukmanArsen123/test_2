@@ -5,7 +5,34 @@ namespace Helpdesk.Api.Data;
 
 public static class SeedData
 {
-    public static async Task InitializeAsync(AppDbContext db)
+    public static async Task SeedLabelsAsync(AppDbContext db)
+    {
+        if (await db.TicketLabels.AnyAsync()) return;
+
+        db.TicketLabels.AddRange(
+        [
+            ..Labels(TicketLabelGroup.Status,
+                (TicketStatus.New, "Новая"),
+                (TicketStatus.InProgress, "В работе"),
+                (TicketStatus.Resolved, "Решена"),
+                (TicketStatus.Closed, "Закрыта")),
+            ..Labels(TicketLabelGroup.Priority,
+                (TicketPriority.Low, "Низкий"),
+                (TicketPriority.Medium, "Средний"),
+                (TicketPriority.High, "Высокий"),
+                (TicketPriority.Critical, "Критичный")),
+            ..Labels(TicketLabelGroup.Category,
+                (TicketCategory.Hardware, "Оборудование"),
+                (TicketCategory.Software, "ПО"),
+                (TicketCategory.Network, "Сеть"),
+                (TicketCategory.Access, "Доступы"),
+                (TicketCategory.Other, "Другое"))
+        ]);
+
+        await db.SaveChangesAsync();
+    }
+
+    public static async Task SeedTicketsAsync(AppDbContext db)
     {
         if (await db.Tickets.AnyAsync()) return;
 
@@ -62,4 +89,14 @@ public static class SeedData
 
         await db.SaveChangesAsync();
     }
+
+    private static IEnumerable<TicketLabel> Labels<TEnum>(
+        TicketLabelGroup group, params (TEnum Value, string Label)[] items) where TEnum : struct, Enum =>
+        items.Select((item, index) => new TicketLabel
+        {
+            Group = group,
+            Value = item.Value.ToString(),
+            Label = item.Label,
+            SortOrder = index
+        });
 }
